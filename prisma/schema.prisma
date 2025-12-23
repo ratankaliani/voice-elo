@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Voice {
+  id          String   @id @default(cuid())
+  name        String
+  voiceId     String   // 11labs voice ID
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  comparisonsAsVoice1 Comparison[] @relation("Voice1")
+  comparisonsAsVoice2 Comparison[] @relation("Voice2")
+  
+  eloScores   EloScore[]
+  
+  @@unique([voiceId])
+}
+
+model Script {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  category    String?  // e.g., "conversational", "narrative", "technical"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  comparisons Comparison[]
+}
+
+model Comparison {
+  id          String   @id @default(cuid())
+  voice1Id    String
+  voice2Id    String
+  scriptId    String
+  winnerId    String?  // null if not yet decided
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  voice1      Voice    @relation("Voice1", fields: [voice1Id], references: [id])
+  voice2      Voice    @relation("Voice2", fields: [voice2Id], references: [id])
+  script      Script   @relation(fields: [scriptId], references: [id])
+  
+  @@index([voice1Id])
+  @@index([voice2Id])
+  @@index([scriptId])
+}
+
+model EloScore {
+  id          String   @id @default(cuid())
+  voiceId     String
+  score       Float    @default(1500.0) // Starting ELO score
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  voice       Voice    @relation(fields: [voiceId], references: [id])
+  
+  @@unique([voiceId])
+  @@index([score])
+}
