@@ -2,6 +2,8 @@
 
 A web application for evaluating and comparing 11labs voices using an ELO rating system.
 
+![Voice Arena Leaderboard](screenshot.png)
+
 ## Features
 
 - **Voice Management**: Admin dashboard to add, edit, and manage voices

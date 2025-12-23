@@ -27,6 +27,7 @@ export default function VoiceManager({ voices: initialVoices }: VoiceManagerProp
   const [voices, setVoices] = useState(initialVoices);
   const [isAdding, setIsAdding] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [editingVoice, setEditingVoice] = useState<Voice | null>(null);
   const [elevenLabsVoices, setElevenLabsVoices] = useState<ElevenLabsVoice[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
   const [formData, setFormData] = useState({
@@ -34,6 +35,11 @@ export default function VoiceManager({ voices: initialVoices }: VoiceManagerProp
     voiceId: "",
     description: "",
     isActive: true,
+  });
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    voiceId: "",
+    description: "",
   });
 
   const fetchElevenLabsVoices = async () => {
@@ -143,6 +149,45 @@ export default function VoiceManager({ voices: initialVoices }: VoiceManagerProp
             v.id === id ? { ...v, isActive: !currentStatus } : v
           )
         );
+      } else {
+        alert("Failed to update voice");
+      }
+    } catch (error) {
+      console.error("Error updating voice:", error);
+      alert("Error updating voice");
+    }
+  };
+
+  const startEditing = (voice: Voice) => {
+    setEditingVoice(voice);
+    setEditFormData({
+      name: voice.name,
+      voiceId: voice.voiceId,
+      description: voice.description || "",
+    });
+    setIsAdding(false);
+    setIsImporting(false);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVoice) return;
+
+    try {
+      const response = await fetch(`/api/voices/${editingVoice.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (response.ok) {
+        const updatedVoice = await response.json();
+        setVoices(
+          voices.map((v) =>
+            v.id === editingVoice.id ? updatedVoice : v
+          )
+        );
+        setEditingVoice(null);
       } else {
         alert("Failed to update voice");
       }
@@ -289,6 +334,72 @@ export default function VoiceManager({ voices: initialVoices }: VoiceManagerProp
         </form>
       )}
 
+      {editingVoice && (
+        <form onSubmit={handleEditSubmit} className="p-6 border-b bg-yellow-50">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-medium text-yellow-900">
+              Editing: {editingVoice.name}
+            </h4>
+            <button
+              type="button"
+              onClick={() => setEditingVoice(null)}
+              className="text-yellow-600 hover:text-yellow-800"
+            >
+              Cancel
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                type="text"
+                required
+                value={editFormData.name}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, name: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                11labs Voice ID
+              </label>
+              <input
+                type="text"
+                required
+                value={editFormData.voiceId}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, voiceId: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                value={editFormData.description}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, description: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                rows={2}
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+          >
+            Save Changes
+          </button>
+        </form>
+      )}
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -334,6 +445,12 @@ export default function VoiceManager({ voices: initialVoices }: VoiceManagerProp
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => startEditing(voice)}
+                    className="text-yellow-600 hover:text-yellow-900 mr-4"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleToggleActive(voice.id, voice.isActive)}
                     className="text-blue-600 hover:text-blue-900 mr-4"
