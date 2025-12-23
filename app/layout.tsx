@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Voice Arena",
@@ -12,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <nav className="nav-bar">
           <div className="nav-inner">
@@ -27,6 +28,7 @@ export default function RootLayout({
               <a href="/admin" className="nav-link">
                 Admin
               </a>
+              <ThemeToggle />
             </div>
           </div>
         </nav>

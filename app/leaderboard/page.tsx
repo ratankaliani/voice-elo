@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { VoiceRow } from "./VoiceRow";
 
 export const dynamic = "force-dynamic";
 
@@ -12,19 +13,40 @@ export default async function LeaderboardPage() {
     },
   });
 
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return "🥇";
-    if (rank === 2) return "🥈";
-    if (rank === 3) return "🥉";
-    return `#${rank}`;
-  };
-
   return (
     <div className="page-container">
       <div className="page-header">
         <h1 className="page-title">Leaderboard</h1>
-        <p className="page-subtitle">Voice rankings based on head-to-head battles</p>
+        <p className="page-subtitle">
+          Voice rankings based on head-to-head battles
+          <span style={{ display: "block", fontSize: "0.75rem", marginTop: "4px", opacity: 0.7 }}>
+            Click a voice to hear a sample
+          </span>
+        </p>
       </div>
+
+      <style>{`
+        .voice-row {
+          transition: background 0.2s ease;
+        }
+        .voice-row:hover {
+          background: var(--bg-tertiary) !important;
+        }
+        .voice-row.playing {
+          background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+        }
+        .voice-row.loading {
+          opacity: 0.7;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .spinner {
+          display: inline-block;
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
 
       <table className="data-table">
         <thead>
@@ -44,25 +66,14 @@ export default async function LeaderboardPage() {
             </tr>
           ) : (
             eloScores.map((score, index) => (
-              <tr key={score.id}>
-                <td style={{ fontWeight: 700, fontSize: index < 3 ? "1.25rem" : "0.875rem" }}>
-                  {getRankIcon(index + 1)}
-                </td>
-                <td>
-                  <div style={{ fontWeight: 600 }}>{score.voice.name}</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace" }}>
-                    {score.voice.voiceId}
-                  </div>
-                </td>
-                <td>
-                  <span className={score.voice.isActive ? "badge badge-success" : "badge"}>
-                    {score.voice.isActive ? "Active" : "Inactive"}
-                  </span>
-                </td>
-                <td style={{ textAlign: "right", fontWeight: 700, fontSize: "1.125rem", fontFamily: "'JetBrains Mono', monospace" }}>
-                  {score.score.toFixed(0)}
-                </td>
-              </tr>
+              <VoiceRow
+                key={score.id}
+                rank={index + 1}
+                voiceId={score.voice.voiceId}
+                name={score.voice.name}
+                isActive={score.voice.isActive}
+                score={score.score}
+              />
             ))
           )}
         </tbody>
