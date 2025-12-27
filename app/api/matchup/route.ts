@@ -46,12 +46,14 @@ export async function GET() {
         id: swapped ? voice2.id : voice1.id,
         voiceId: swapped ? voice2.voiceId : voice1.voiceId,
         name: swapped ? voice2.name : voice1.name,
+        provider: swapped ? voice2.provider : voice1.provider,
         elo: swapped ? voice2.eloScores[0]?.score : voice1.eloScores[0]?.score,
       },
       voiceB: {
         id: swapped ? voice1.id : voice2.id,
         voiceId: swapped ? voice1.voiceId : voice2.voiceId,
         name: swapped ? voice1.name : voice2.name,
+        provider: swapped ? voice1.provider : voice2.provider,
         elo: swapped ? voice1.eloScores[0]?.score : voice2.eloScores[0]?.score,
       },
       script: {

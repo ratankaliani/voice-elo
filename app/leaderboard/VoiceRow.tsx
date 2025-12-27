@@ -8,21 +8,15 @@ interface VoiceRowProps {
   name: string;
   isActive: boolean;
   score: number;
+  provider?: string;
 }
 
-export function VoiceRow({ rank, voiceId, name, isActive, score }: VoiceRowProps) {
+export function VoiceRow({ rank, voiceId, name, isActive, score, provider = "elevenlabs" }: VoiceRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return "🥇";
-    if (rank === 2) return "🥈";
-    if (rank === 3) return "🥉";
-    return `#${rank}`;
-  };
-
-  const playSample = async () => {
+  const handleClick = async () => {
     if (isLoading) return;
 
     // If already playing, stop
@@ -34,112 +28,107 @@ export function VoiceRow({ rank, voiceId, name, isActive, score }: VoiceRowProps
     }
 
     setIsLoading(true);
+
     try {
-      const response = await fetch("/api/elevenlabs/tts", {
+      // Use the appropriate endpoint based on provider
+      const endpoint = provider === "cartesia" 
+        ? "/api/cartesia/tts" 
+        : "/api/elevenlabs/tts";
+      
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           voiceId,
-          text: `Hi, how are you? I'm ${name}!`,
+          text: "Hello! This is a sample of my voice. I hope you enjoy listening to me speak.",
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to generate audio");
+      if (!response.ok) {
+        throw new Error("Failed to generate audio");
+      }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
 
+      // Clean up previous audio
       if (audioRef.current) {
         audioRef.current.pause();
         URL.revokeObjectURL(audioRef.current.src);
       }
 
-      const audio = new Audio(audioUrl);
+      const audio = new Audio(url);
       audioRef.current = audio;
 
       audio.onended = () => {
         setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
+        URL.revokeObjectURL(url);
       };
 
       audio.onerror = () => {
         setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
+        setIsLoading(false);
       };
 
       await audio.play();
       setIsPlaying(true);
     } catch (error) {
-      console.error("Error playing sample:", error);
+      console.error("Error playing voice sample:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const getMedalEmoji = (rank: number) => {
+    switch (rank) {
+      case 1: return "🥇";
+      case 2: return "🥈";
+      case 3: return "🥉";
+      default: return null;
+    }
+  };
+
+  const medal = getMedalEmoji(rank);
+
   return (
     <tr
-      onClick={playSample}
-      style={{ cursor: "pointer" }}
       className={`voice-row ${isPlaying ? "playing" : ""} ${isLoading ? "loading" : ""}`}
+      onClick={handleClick}
+      style={{ cursor: "pointer" }}
     >
-      <td style={{ fontWeight: 700, fontSize: rank <= 3 ? "1.25rem" : "0.875rem" }}>
-        {getRankIcon(rank)}
+      <td style={{ fontWeight: 600, color: rank <= 3 ? "var(--accent-a)" : "var(--text-primary)" }}>
+        {medal ? `${medal} ${rank}` : rank}
       </td>
       <td>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span
-            className="play-indicator"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "24px",
-              height: "24px",
-              borderRadius: "50%",
-              background: isPlaying ? "var(--accent)" : isLoading ? "var(--text-muted)" : "var(--bg-tertiary)",
-              color: isPlaying || isLoading ? "white" : "var(--text-secondary)",
-              fontSize: "10px",
-              transition: "all 0.2s ease",
+          <span>{name}</span>
+          {isLoading && <span className="spinner">⟳</span>}
+          {isPlaying && <span style={{ color: "var(--accent-b)" }}>♪</span>}
+          <span 
+            style={{ 
+              fontSize: "0.65rem", 
+              padding: "2px 6px", 
+              borderRadius: "4px",
+              background: provider === "cartesia" 
+                ? "rgba(59, 130, 246, 0.15)" 
+                : "rgba(147, 51, 234, 0.15)",
+              color: provider === "cartesia" 
+                ? "rgb(96, 165, 250)" 
+                : "rgb(192, 132, 252)",
             }}
           >
-            {isLoading ? (
-              <span className="spinner">⟳</span>
-            ) : isPlaying ? (
-              "■"
-            ) : (
-              "▶"
-            )}
+            {provider === "cartesia" ? "Cartesia" : "11Labs"}
           </span>
-          <div>
-            <div style={{ fontWeight: 600 }}>{name}</div>
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: "var(--text-muted)",
-                fontFamily: "'JetBrains Mono', monospace",
-              }}
-            >
-              {voiceId}
-            </div>
-          </div>
         </div>
       </td>
       <td>
-        <span className={isActive ? "badge badge-success" : "badge"}>
+        <span className={`badge ${isActive ? "badge-success" : ""}`}>
           {isActive ? "Active" : "Inactive"}
         </span>
       </td>
-      <td
-        style={{
-          textAlign: "right",
-          fontWeight: 700,
-          fontSize: "1.125rem",
-          fontFamily: "'JetBrains Mono', monospace",
-        }}
-      >
-        {score.toFixed(0)}
+      <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+        {Math.round(score)}
       </td>
     </tr>
   );
 }
-

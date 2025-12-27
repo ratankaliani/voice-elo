@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
 
     // Update ELO scores if there's a winner
     if (winnerId && winnerId !== "tie") {
-      // Get current ELO scores
       const elo1 = await prisma.eloScore.findUnique({
         where: { voiceId: voice1Id },
       });
@@ -34,33 +33,25 @@ export async function POST(request: NextRequest) {
         where: { voiceId: voice2Id },
       });
 
-      if (!elo1 || !elo2) {
-        return NextResponse.json(
-          { error: "ELO scores not found for voices" },
-          { status: 500 }
+      if (elo1 && elo2) {
+        const score1 =
+          winnerId === voice1Id ? 1 : winnerId === voice2Id ? 0 : 0.5;
+        const { newRating1, newRating2 } = calculateElo(
+          elo1.score,
+          elo2.score,
+          score1
         );
+
+        await prisma.eloScore.update({
+          where: { voiceId: voice1Id },
+          data: { score: newRating1 },
+        });
+
+        await prisma.eloScore.update({
+          where: { voiceId: voice2Id },
+          data: { score: newRating2 },
+        });
       }
-
-      // Determine score (1 if voice1 wins, 0 if voice2 wins, 0.5 for tie)
-      const score1 = winnerId === voice1Id ? 1 : winnerId === voice2Id ? 0 : 0.5;
-
-      // Calculate new ELO scores
-      const { newRating1, newRating2 } = calculateElo(
-        elo1.score,
-        elo2.score,
-        score1
-      );
-
-      // Update ELO scores
-      await prisma.eloScore.update({
-        where: { voiceId: voice1Id },
-        data: { score: newRating1 },
-      });
-
-      await prisma.eloScore.update({
-        where: { voiceId: voice2Id },
-        data: { score: newRating2 },
-      });
     }
 
     return NextResponse.json(comparison);

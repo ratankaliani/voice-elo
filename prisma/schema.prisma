@@ -6,14 +6,15 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Voice {
   id          String   @id @default(cuid())
   name        String
-  voiceId     String   // 11labs voice ID
+  voiceId     String   // Provider-specific voice ID
+  provider    String   @default("elevenlabs") // "elevenlabs" or "cartesia"
   description String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -24,7 +25,7 @@ model Voice {
   
   eloScores   EloScore[]
   
-  @@unique([voiceId])
+  @@unique([voiceId, provider])
 }
 
 model Script {
@@ -43,7 +44,7 @@ model Comparison {
   voice1Id    String
   voice2Id    String
   scriptId    String
-  winnerId    String?  // null if not yet decided
+  winnerId    String?  // null if tie
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -58,13 +59,12 @@ model Comparison {
 
 model EloScore {
   id          String   @id @default(cuid())
-  voiceId     String
-  score       Float    @default(1500.0) // Starting ELO score
+  voiceId     String   @unique
+  score       Float    @default(1500.0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   voice       Voice    @relation(fields: [voiceId], references: [id])
   
-  @@unique([voiceId])
   @@index([score])
 }

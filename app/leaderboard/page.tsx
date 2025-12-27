@@ -73,6 +73,7 @@ export default async function LeaderboardPage() {
                 name={score.voice.name}
                 isActive={score.voice.isActive}
                 score={score.score}
+                provider={score.voice.provider}
               />
             ))
           )}
