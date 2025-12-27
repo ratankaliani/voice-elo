@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(voice);
   } catch (error: any) {
     console.error("Error creating voice:", error);
-    
+
     // Check for unique constraint violation
     if (error.code === "P2002") {
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    
+
     return NextResponse.json(
       { error: error.message || "Failed to create voice" },
       { status: 500 }

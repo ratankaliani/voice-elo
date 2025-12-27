@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const audioBuffer = await generateCartesiaSpeech(voiceId, text);
-    
+
     return new NextResponse(audioBuffer, {
       headers: {
         "Content-Type": "audio/mpeg",
@@ -29,4 +29,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -14,10 +14,7 @@ export async function GET(
     });
 
     if (!voice) {
-      return NextResponse.json(
-        { error: "Voice not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Voice not found" }, { status: 404 });
     }
 
     return NextResponse.json(voice);

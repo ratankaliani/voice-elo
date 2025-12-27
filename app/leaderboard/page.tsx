@@ -19,7 +19,14 @@ export default async function LeaderboardPage() {
         <h1 className="page-title">Leaderboard</h1>
         <p className="page-subtitle">
           Voice rankings based on head-to-head battles
-          <span style={{ display: "block", fontSize: "0.75rem", marginTop: "4px", opacity: 0.7 }}>
+          <span
+            style={{
+              display: "block",
+              fontSize: "0.75rem",
+              marginTop: "4px",
+              opacity: 0.7,
+            }}
+          >
             Click a voice to hear a sample
           </span>
         </p>
@@ -60,7 +67,14 @@ export default async function LeaderboardPage() {
         <tbody>
           {eloScores.length === 0 ? (
             <tr>
-              <td colSpan={4} style={{ textAlign: "center", color: "var(--text-muted)", padding: "48px 20px" }}>
+              <td
+                colSpan={4}
+                style={{
+                  textAlign: "center",
+                  color: "var(--text-muted)",
+                  padding: "48px 20px",
+                }}
+              >
                 No battles yet. Start comparing voices to see rankings!
               </td>
             </tr>

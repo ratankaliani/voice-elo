@@ -15,7 +15,7 @@ export interface CartesiaVoicesResponse {
 
 export async function fetchCartesiaVoices(): Promise<CartesiaVoice[]> {
   const apiKey = process.env.CARTESIA_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("CARTESIA_API_KEY is not configured");
   }
@@ -29,7 +29,9 @@ export async function fetchCartesiaVoices(): Promise<CartesiaVoice[]> {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Failed to fetch Cartesia voices: ${response.status} ${text}`);
+    throw new Error(
+      `Failed to fetch Cartesia voices: ${response.status} ${text}`
+    );
   }
 
   const data = await response.json();
@@ -42,7 +44,7 @@ export async function generateCartesiaSpeech(
   text: string
 ): Promise<ArrayBuffer> {
   const apiKey = process.env.CARTESIA_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("CARTESIA_API_KEY is not configured");
   }
@@ -71,9 +73,10 @@ export async function generateCartesiaSpeech(
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Failed to generate Cartesia speech: ${response.status} ${text}`);
+    throw new Error(
+      `Failed to generate Cartesia speech: ${response.status} ${text}`
+    );
   }
 
   return response.arrayBuffer();
 }
-

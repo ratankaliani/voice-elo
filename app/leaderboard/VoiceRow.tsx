@@ -11,7 +11,14 @@ interface VoiceRowProps {
   provider?: string;
 }
 
-export function VoiceRow({ rank, voiceId, name, isActive, score, provider = "elevenlabs" }: VoiceRowProps) {
+export function VoiceRow({
+  rank,
+  voiceId,
+  name,
+  isActive,
+  score,
+  provider = "elevenlabs",
+}: VoiceRowProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -31,10 +38,9 @@ export function VoiceRow({ rank, voiceId, name, isActive, score, provider = "ele
 
     try {
       // Use the appropriate endpoint based on provider
-      const endpoint = provider === "cartesia" 
-        ? "/api/cartesia/tts" 
-        : "/api/elevenlabs/tts";
-      
+      const endpoint =
+        provider === "cartesia" ? "/api/cartesia/tts" : "/api/elevenlabs/tts";
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,10 +87,14 @@ export function VoiceRow({ rank, voiceId, name, isActive, score, provider = "ele
 
   const getMedalEmoji = (rank: number) => {
     switch (rank) {
-      case 1: return "🥇";
-      case 2: return "🥈";
-      case 3: return "🥉";
-      default: return null;
+      case 1:
+        return "🥇";
+      case 2:
+        return "🥈";
+      case 3:
+        return "🥉";
+      default:
+        return null;
     }
   };
 
@@ -92,11 +102,18 @@ export function VoiceRow({ rank, voiceId, name, isActive, score, provider = "ele
 
   return (
     <tr
-      className={`voice-row ${isPlaying ? "playing" : ""} ${isLoading ? "loading" : ""}`}
+      className={`voice-row ${isPlaying ? "playing" : ""} ${
+        isLoading ? "loading" : ""
+      }`}
       onClick={handleClick}
       style={{ cursor: "pointer" }}
     >
-      <td style={{ fontWeight: 600, color: rank <= 3 ? "var(--accent-a)" : "var(--text-primary)" }}>
+      <td
+        style={{
+          fontWeight: 600,
+          color: rank <= 3 ? "var(--accent-a)" : "var(--text-primary)",
+        }}
+      >
         {medal ? `${medal} ${rank}` : rank}
       </td>
       <td>
@@ -104,17 +121,19 @@ export function VoiceRow({ rank, voiceId, name, isActive, score, provider = "ele
           <span>{name}</span>
           {isLoading && <span className="spinner">⟳</span>}
           {isPlaying && <span style={{ color: "var(--accent-b)" }}>♪</span>}
-          <span 
-            style={{ 
-              fontSize: "0.65rem", 
-              padding: "2px 6px", 
+          <span
+            style={{
+              fontSize: "0.65rem",
+              padding: "2px 6px",
               borderRadius: "4px",
-              background: provider === "cartesia" 
-                ? "rgba(59, 130, 246, 0.15)" 
-                : "rgba(147, 51, 234, 0.15)",
-              color: provider === "cartesia" 
-                ? "rgb(96, 165, 250)" 
-                : "rgb(192, 132, 252)",
+              background:
+                provider === "cartesia"
+                  ? "rgba(59, 130, 246, 0.15)"
+                  : "rgba(147, 51, 234, 0.15)",
+              color:
+                provider === "cartesia"
+                  ? "rgb(96, 165, 250)"
+                  : "rgb(192, 132, 252)",
             }}
           >
             {provider === "cartesia" ? "Cartesia" : "11Labs"}
@@ -126,7 +145,13 @@ export function VoiceRow({ rank, voiceId, name, isActive, score, provider = "ele
           {isActive ? "Active" : "Inactive"}
         </span>
       </td>
-      <td style={{ textAlign: "right", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+      <td
+        style={{
+          textAlign: "right",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontWeight: 600,
+        }}
+      >
         {Math.round(score)}
       </td>
     </tr>
