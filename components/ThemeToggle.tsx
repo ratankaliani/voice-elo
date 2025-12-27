@@ -1,30 +1,81 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
-export default function ThemeToggle() {
-  const [isDark, setIsDark] = useState(true);
-  const [mounted, setMounted] = useState(false);
+// External store for theme state - shared across all components and synced across tabs
+const themeStore = {
+  listeners: new Set<() => void>(),
+  theme: "dark" as "dark" | "light",
 
-  useEffect(() => {
-    setMounted(true);
+  getSnapshot() {
+    return themeStore.theme;
+  },
+
+  getServerSnapshot() {
+    return "dark" as const;
+  },
+
+  subscribe(listener: () => void) {
+    themeStore.listeners.add(listener);
+
+    // Listen for storage events from other tabs
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "theme" && e.newValue) {
+        themeStore.theme = e.newValue as "dark" | "light";
+        document.documentElement.setAttribute("data-theme", e.newValue);
+        themeStore.notifyListeners();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      themeStore.listeners.delete(listener);
+      window.removeEventListener("storage", handleStorage);
+    };
+  },
+
+  notifyListeners() {
+    themeStore.listeners.forEach((listener) => listener());
+  },
+
+  setTheme(newTheme: "dark" | "light") {
+    themeStore.theme = newTheme;
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+    themeStore.notifyListeners();
+  },
+
+  initialize() {
+    if (typeof window === "undefined") return;
     const stored = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const theme = stored || (prefersDark ? "dark" : "light");
-    setIsDark(theme === "dark");
-    document.documentElement.setAttribute("data-theme", theme);
+    themeStore.theme = (stored || (prefersDark ? "dark" : "light")) as "dark" | "light";
+  },
+};
+
+// Initialize on module load (client-side only)
+if (typeof window !== "undefined") {
+  themeStore.initialize();
+}
+
+export default function ThemeToggle() {
+  const theme = useSyncExternalStore(
+    themeStore.subscribe,
+    themeStore.getSnapshot,
+    themeStore.getServerSnapshot
+  );
+
+  // Initialize on mount to handle edge cases
+  useEffect(() => {
+    themeStore.initialize();
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = isDark ? "light" : "dark";
-    setIsDark(!isDark);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
+    themeStore.setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  if (!mounted) {
-    return <div className="theme-toggle-placeholder" />;
-  }
+  const isDark = theme === "dark";
 
   return (
     <button
