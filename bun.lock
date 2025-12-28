@@ -5,6 +5,7 @@
       "name": "voice-experimentation",
       "dependencies": {
         "@prisma/client": "^5.19.0",
+        "@vercel/blob": "^1.0.0",
         "next": "14.2.0",
         "openai": "^6.15.0",
         "prisma": "^5.19.0",

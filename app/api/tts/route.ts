@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateSpeech } from "@/lib/elevenlabs";
 import { generateCartesiaSpeech } from "@/lib/cartesia";
+import { put, head } from "@vercel/blob";
 
 // Character limit for TTS requests
 const MAX_TEXT_LENGTH = 1000;
+
+// Generate cache key for audio
+function getCacheKey(voiceId: string, scriptId: string): string {
+  return `tts/${voiceId}-${scriptId}.mp3`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,6 +55,19 @@ export async function POST(request: NextRequest) {
         );
       }
       textContent = script.content;
+
+      // Check cache for script-based requests
+      const cacheKey = getCacheKey(voiceId, scriptId);
+
+      try {
+        const cached = await head(cacheKey);
+        if (cached) {
+          // Redirect to cached blob URL
+          return NextResponse.redirect(cached.url);
+        }
+      } catch {
+        // Not cached, continue to generate
+      }
     } else {
       textContent = text;
     }
@@ -70,6 +89,20 @@ export async function POST(request: NextRequest) {
       audioBuffer = await generateCartesiaSpeech(voice.voiceId, textContent);
     } else {
       audioBuffer = await generateSpeech(voice.voiceId, textContent);
+    }
+
+    // Cache if this was a script request
+    if (scriptId) {
+      const cacheKey = getCacheKey(voiceId, scriptId);
+      try {
+        await put(cacheKey, audioBuffer, {
+          access: "public",
+          contentType: "audio/mpeg",
+        });
+      } catch (e) {
+        // Cache failure shouldn't break the response
+        console.error("Failed to cache audio:", e);
+      }
     }
 
     return new NextResponse(audioBuffer, {

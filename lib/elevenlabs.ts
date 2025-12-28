@@ -34,6 +34,29 @@ export async function fetchElevenLabsVoices(): Promise<ElevenLabsVoice[]> {
   return data.voices;
 }
 
+export async function fetchElevenLabsVoiceById(voiceId: string): Promise<ElevenLabsVoice> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("ELEVENLABS_API_KEY is not configured");
+  }
+
+  const response = await fetch(`${ELEVENLABS_API_URL}/voices/${voiceId}`, {
+    headers: {
+      "xi-api-key": apiKey,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Voice not found");
+    }
+    throw new Error(`Failed to fetch voice: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 export async function generateSpeech(
   voiceId: string,
   text: string

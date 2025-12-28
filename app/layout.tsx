@@ -40,9 +40,6 @@ export default function RootLayout({
               <a href="/leaderboard" className="nav-link">
                 Leaderboard
               </a>
-              <a href="/admin" className="nav-link">
-                Admin
-              </a>
               <ThemeToggle />
             </div>
           </div>

@@ -39,6 +39,35 @@ export async function fetchCartesiaVoices(): Promise<CartesiaVoice[]> {
   return Array.isArray(data) ? data : data.data || [];
 }
 
+export async function fetchCartesiaVoiceById(
+  voiceId: string
+): Promise<CartesiaVoice> {
+  const apiKey = process.env.CARTESIA_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("CARTESIA_API_KEY is not configured");
+  }
+
+  const response = await fetch(`${CARTESIA_API_URL}/voices/${voiceId}`, {
+    headers: {
+      "X-API-Key": apiKey,
+      "Cartesia-Version": "2024-06-10",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Voice not found");
+    }
+    const text = await response.text();
+    throw new Error(
+      `Failed to fetch Cartesia voice: ${response.status} ${text}`
+    );
+  }
+
+  return response.json();
+}
+
 export async function generateCartesiaSpeech(
   voiceId: string,
   text: string

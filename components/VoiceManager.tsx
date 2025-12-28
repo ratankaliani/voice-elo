@@ -31,6 +31,18 @@ export default function VoiceManager({
   const [providerVoices, setProviderVoices] = useState<ProviderVoice[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Custom import state
+  const [showCustomImport, setShowCustomImport] = useState(false);
+  const [customVoiceId, setCustomVoiceId] = useState("");
+  const [customProvider, setCustomProvider] = useState<
+    "elevenlabs" | "cartesia"
+  >("elevenlabs");
+  const [customImportLoading, setCustomImportLoading] = useState(false);
+  const [customImportError, setCustomImportError] = useState<string | null>(
+    null
+  );
+  const [fetchedVoice, setFetchedVoice] = useState<ProviderVoice | null>(null);
+
   const fetchVoices = async (provider: "elevenlabs" | "cartesia") => {
     setLoading(true);
     setImportingFrom(provider);
@@ -116,6 +128,107 @@ export default function VoiceManager({
   const isImported = (id: string) =>
     voices.some((v) => v.voiceId === id && v.provider === importingFrom);
 
+  const lookupVoice = async () => {
+    if (!customVoiceId.trim()) {
+      setCustomImportError("Please enter a voice ID");
+      return;
+    }
+
+    setCustomImportLoading(true);
+    setCustomImportError(null);
+    setFetchedVoice(null);
+
+    try {
+      const res = await fetch(
+        `/api/${customProvider}/voices/${customVoiceId.trim()}`
+      );
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error("Voice not found. Check the ID and try again.");
+        }
+        const data = await res.json();
+        throw new Error(data.error || "Failed to fetch voice");
+      }
+
+      const data = await res.json();
+
+      // Normalize the response
+      const normalized: ProviderVoice =
+        customProvider === "elevenlabs"
+          ? {
+              id: data.voice_id,
+              name: data.name,
+              category: data.category,
+              description: data.description,
+              preview_url: data.preview_url,
+            }
+          : {
+              id: data.id,
+              name: data.name,
+              description: data.description,
+            };
+
+      setFetchedVoice(normalized);
+    } catch (err: any) {
+      setCustomImportError(err.message || "Failed to lookup voice");
+    } finally {
+      setCustomImportLoading(false);
+    }
+  };
+
+  const importCustomVoice = async () => {
+    if (!fetchedVoice) return;
+
+    if (
+      voices.some(
+        (v) => v.voiceId === fetchedVoice.id && v.provider === customProvider
+      )
+    ) {
+      setCustomImportError("This voice is already imported");
+      return;
+    }
+
+    setCustomImportLoading(true);
+
+    try {
+      const res = await fetch("/api/voices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fetchedVoice.name,
+          voiceId: fetchedVoice.id,
+          provider: customProvider,
+          description: fetchedVoice.description || fetchedVoice.category || "",
+        }),
+      });
+
+      if (res.ok) {
+        const newVoice = await res.json();
+        setVoices([newVoice, ...voices]);
+        // Reset custom import state
+        setShowCustomImport(false);
+        setCustomVoiceId("");
+        setFetchedVoice(null);
+        setCustomImportError(null);
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to import voice");
+      }
+    } catch (err: any) {
+      setCustomImportError(err.message || "Failed to import voice");
+    } finally {
+      setCustomImportLoading(false);
+    }
+  };
+
+  const closeCustomImport = () => {
+    setShowCustomImport(false);
+    setCustomVoiceId("");
+    setFetchedVoice(null);
+    setCustomImportError(null);
+  };
+
   return (
     <section className="admin-section">
       <div className="section-header">
@@ -139,8 +252,107 @@ export default function VoiceManager({
               ? "Loading..."
               : "Import Cartesia"}
           </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowCustomImport(true)}
+            disabled={loading}
+          >
+            + Custom ID
+          </button>
         </div>
       </div>
+
+      {showCustomImport && (
+        <div className="custom-import-panel">
+          <div className="import-header">
+            <span>Import Voice by ID</span>
+            <button className="btn-text" onClick={closeCustomImport}>
+              Close
+            </button>
+          </div>
+
+          <div className="custom-import-form">
+            <div className="custom-import-row">
+              <select
+                className="form-select custom-provider-select"
+                value={customProvider}
+                onChange={(e) => {
+                  setCustomProvider(
+                    e.target.value as "elevenlabs" | "cartesia"
+                  );
+                  setFetchedVoice(null);
+                  setCustomImportError(null);
+                }}
+              >
+                <option value="elevenlabs">ElevenLabs</option>
+                <option value="cartesia">Cartesia</option>
+              </select>
+              <input
+                type="text"
+                className="form-input custom-voice-input"
+                placeholder="Enter voice ID..."
+                value={customVoiceId}
+                onChange={(e) => {
+                  setCustomVoiceId(e.target.value);
+                  setFetchedVoice(null);
+                  setCustomImportError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") lookupVoice();
+                }}
+              />
+              <button
+                className="btn btn-primary"
+                onClick={lookupVoice}
+                disabled={customImportLoading || !customVoiceId.trim()}
+              >
+                {customImportLoading ? "Looking up..." : "Lookup"}
+              </button>
+            </div>
+
+            {customImportError && (
+              <div className="custom-import-error">{customImportError}</div>
+            )}
+
+            {fetchedVoice && (
+              <div className="custom-import-result">
+                <div className="import-card">
+                  <div className="import-info">
+                    <strong>{fetchedVoice.name}</strong>
+                    <small>
+                      {fetchedVoice.description ||
+                        fetchedVoice.category ||
+                        fetchedVoice.id}
+                    </small>
+                  </div>
+                  <button
+                    className="btn btn-primary btn-small"
+                    onClick={importCustomVoice}
+                    disabled={
+                      customImportLoading ||
+                      voices.some(
+                        (v) =>
+                          v.voiceId === fetchedVoice.id &&
+                          v.provider === customProvider
+                      )
+                    }
+                  >
+                    {voices.some(
+                      (v) =>
+                        v.voiceId === fetchedVoice.id &&
+                        v.provider === customProvider
+                    )
+                      ? "✓ Imported"
+                      : customImportLoading
+                      ? "Importing..."
+                      : "Import"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {importingFrom && providerVoices.length > 0 && (
         <div className="import-panel">
