@@ -15,7 +15,7 @@ export interface ElevenLabsVoicesResponse {
 
 export async function fetchElevenLabsVoices(): Promise<ElevenLabsVoice[]> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("ELEVENLABS_API_KEY is not configured");
   }
@@ -34,9 +34,11 @@ export async function fetchElevenLabsVoices(): Promise<ElevenLabsVoice[]> {
   return data.voices;
 }
 
-export async function fetchElevenLabsVoiceById(voiceId: string): Promise<ElevenLabsVoice> {
+export async function fetchElevenLabsVoiceById(
+  voiceId: string
+): Promise<ElevenLabsVoice> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("ELEVENLABS_API_KEY is not configured");
   }
@@ -62,7 +64,7 @@ export async function generateSpeech(
   text: string
 ): Promise<ArrayBuffer> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("ELEVENLABS_API_KEY is not configured");
   }
