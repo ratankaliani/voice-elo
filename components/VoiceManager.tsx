@@ -26,7 +26,7 @@ export default function VoiceManager({
 }) {
   const [voices, setVoices] = useState(initialVoices);
   const [importingFrom, setImportingFrom] = useState<
-    "elevenlabs" | "cartesia" | null
+    "elevenlabs" | "cartesia" | "gemini" | null
   >(null);
   const [providerVoices, setProviderVoices] = useState<ProviderVoice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export default function VoiceManager({
   const [showCustomImport, setShowCustomImport] = useState(false);
   const [customVoiceId, setCustomVoiceId] = useState("");
   const [customProvider, setCustomProvider] = useState<
-    "elevenlabs" | "cartesia"
+    "elevenlabs" | "cartesia" | "gemini"
   >("elevenlabs");
   const [customImportLoading, setCustomImportLoading] = useState(false);
   const [customImportError, setCustomImportError] = useState<string | null>(
@@ -43,7 +43,7 @@ export default function VoiceManager({
   );
   const [fetchedVoice, setFetchedVoice] = useState<ProviderVoice | null>(null);
 
-  const fetchVoices = async (provider: "elevenlabs" | "cartesia") => {
+  const fetchVoices = async (provider: "elevenlabs" | "cartesia" | "gemini") => {
     setLoading(true);
     setImportingFrom(provider);
     try {
@@ -51,20 +51,28 @@ export default function VoiceManager({
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
 
-      // Normalize the response
-      const normalized =
-        provider === "elevenlabs"
-          ? data.map((v: any) => ({
-              id: v.voice_id,
-              name: v.name,
-              category: v.category,
-              preview_url: v.preview_url,
-            }))
-          : data.map((v: any) => ({
-              id: v.id,
-              name: v.name,
-              description: v.description,
-            }));
+      // Normalize the response based on provider
+      let normalized: ProviderVoice[];
+      if (provider === "elevenlabs") {
+        normalized = data.map((v: any) => ({
+          id: v.voice_id,
+          name: v.name,
+          category: v.category,
+          preview_url: v.preview_url,
+        }));
+      } else if (provider === "gemini") {
+        normalized = data.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          description: v.description,
+        }));
+      } else {
+        normalized = data.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          description: v.description,
+        }));
+      }
 
       setProviderVoices(normalized);
     } catch {
@@ -153,21 +161,24 @@ export default function VoiceManager({
 
       const data = await res.json();
 
-      // Normalize the response
-      const normalized: ProviderVoice =
-        customProvider === "elevenlabs"
-          ? {
-              id: data.voice_id,
-              name: data.name,
-              category: data.category,
-              description: data.description,
-              preview_url: data.preview_url,
-            }
-          : {
-              id: data.id,
-              name: data.name,
-              description: data.description,
-            };
+      // Normalize the response based on provider
+      let normalized: ProviderVoice;
+      if (customProvider === "elevenlabs") {
+        normalized = {
+          id: data.voice_id,
+          name: data.name,
+          category: data.category,
+          description: data.description,
+          preview_url: data.preview_url,
+        };
+      } else {
+        // Both Gemini and Cartesia use id/name/description
+        normalized = {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+        };
+      }
 
       setFetchedVoice(normalized);
     } catch (err: any) {
@@ -254,6 +265,15 @@ export default function VoiceManager({
           </button>
           <button
             className="btn btn-secondary"
+            onClick={() => fetchVoices("gemini")}
+            disabled={loading}
+          >
+            {loading && importingFrom === "gemini"
+              ? "Loading..."
+              : "Import Gemini"}
+          </button>
+          <button
+            className="btn btn-secondary"
             onClick={() => setShowCustomImport(true)}
             disabled={loading}
           >
@@ -278,7 +298,7 @@ export default function VoiceManager({
                 value={customProvider}
                 onChange={(e) => {
                   setCustomProvider(
-                    e.target.value as "elevenlabs" | "cartesia"
+                    e.target.value as "elevenlabs" | "cartesia" | "gemini"
                   );
                   setFetchedVoice(null);
                   setCustomImportError(null);
@@ -286,6 +306,7 @@ export default function VoiceManager({
               >
                 <option value="elevenlabs">ElevenLabs</option>
                 <option value="cartesia">Cartesia</option>
+                <option value="gemini">Gemini</option>
               </select>
               <input
                 type="text"
@@ -412,10 +433,16 @@ export default function VoiceManager({
                     className={`badge ${
                       v.provider === "cartesia"
                         ? "badge-cartesia"
+                        : v.provider === "gemini"
+                        ? "badge-gemini"
                         : "badge-elevenlabs"
                     }`}
                   >
-                    {v.provider === "cartesia" ? "Cartesia" : "11Labs"}
+                    {v.provider === "cartesia"
+                      ? "Cartesia"
+                      : v.provider === "gemini"
+                      ? "Gemini"
+                      : "11Labs"}
                   </span>
                 </td>
                 <td>

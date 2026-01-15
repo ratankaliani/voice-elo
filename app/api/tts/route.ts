@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateSpeech } from "@/lib/elevenlabs";
 import { generateCartesiaSpeech } from "@/lib/cartesia";
+import { generateGeminiSpeech } from "@/lib/gemini";
 import { put, head } from "@vercel/blob";
 
 // Character limit for TTS requests
@@ -84,9 +85,13 @@ export async function POST(request: NextRequest) {
 
     // Generate audio based on provider
     let audioBuffer: ArrayBuffer;
+    let contentType = "audio/mpeg";
 
     if (voice.provider === "cartesia") {
       audioBuffer = await generateCartesiaSpeech(voice.voiceId, textContent);
+    } else if (voice.provider === "gemini") {
+      audioBuffer = await generateGeminiSpeech(voice.voiceId, textContent);
+      contentType = "audio/wav";
     } else {
       audioBuffer = await generateSpeech(voice.voiceId, textContent);
     }
@@ -107,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     return new NextResponse(audioBuffer, {
       headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": contentType,
         "Content-Length": audioBuffer.byteLength.toString(),
       },
     });
